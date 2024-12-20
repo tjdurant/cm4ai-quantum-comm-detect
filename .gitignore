@@ -9,7 +9,6 @@ results/
 .vscode/
 config/
 config.json
-main.py
 
 
 ### Python ###
