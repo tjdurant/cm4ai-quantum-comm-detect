@@ -1,0 +1,9 @@
+dwave-hybrid==0.6.10
+dwave-system==1.21.0
+dwave-ocean-sdk
+matplotlib
+networkx
+pandas
+scikit-learn
+ipykernel
+kaggle
