@@ -18,13 +18,14 @@ Install required packages
 pip install -r requirements.txt --upgrade
 ```
 
-## Switch to kaggle token and auth stuff
-## Weights and Biases
-Create an account with [Weights & Biases](https://wandb.ai/) if you do not already have one. Then get your API key from the Settings menu. After you have your key, run the following:
 
-```
-wandb login
-```
+## Kaggle Login and Notebook Auth
+Create an account with [Kaggle](https://www.kaggle.com/) if you do not already have one. 
+
+**Get Your API Credentials:** Login and go to Profile Picture -> Settings -> Account. Scroll down to the **API section** and click on **Create New API Token**. This will download a file called `kaggle.json`. 
+
+**Place the Credentials in a Secure Location:** By default, the Kaggle API client expects to find the kaggle.json file in `~/.kaggle/` on Unix-based systems (including macOS and Linux) and `%HOMEPATH%\.kaggle\` on Windows. Create the `.kaggle` directory if it doesn't exist and place your `kaggle.json` file inside it.
+
 
 ## D-Wave
 Register for an account with [D-Wave](https://cloud.dwavesys.com/leap/) (free trial). After you have an account, obtain your Solver API Token from the menu. Then run:
@@ -33,12 +34,13 @@ Register for an account with [D-Wave](https://cloud.dwavesys.com/leap/) (free tr
 dwave config create
 ```
 
-# Running the Current Example
-After running the above setup and configuration steps, you can run a predefined set of parameters against a synthetic, benchmark graph from the root of this project with:
+# Running the Benchmark Dataset
+After running the above setup and configuration steps, you can run a predefined set of parameters against a synthetic, benchmark graph from the root of this project within the Python Notebook: 
 
 ```
-python src/driver.py
+EXAMPLE-dwave-community-detection.ipynb
 ```
+
 
 # References
 * https://aws.amazon.com/blogs/quantum-computing/community-detection-using-hybrid-quantum-annealing-on-amazon-braket-part-2/
