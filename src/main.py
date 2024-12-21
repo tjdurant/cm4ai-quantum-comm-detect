@@ -1,6 +1,7 @@
 import json
 import os
 import zipfile
+import time
 
 import networkx as nx
 import numpy as np
@@ -39,7 +40,7 @@ args_dict = {
     "output_dir" : output_dir
 }
 
-number_of_nodes_in_nx_benchmark = 1000
+number_of_nodes_in_nx_benchmark = 5000
 beta0 = 5
 gamma0 = -250
 threshold = 0.2
@@ -121,6 +122,61 @@ print ("max value = ", modularity.max())
 
 print ("threshold = ", threshold)
 
-Q_optimized = QCD_optimized.makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold)
+print("Creating QUBO Matrix...")
+start_time = time.time()
+Q = QCD_optimized.makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold)
+end_time = time.time()
+elapsed = end_time - start_time
+print(f"QUBO Created: {elapsed:.4f} seconds")
 
-print(Q_optimized)
+result = {}
+result['num_clusters'] = num_parts 
+result['nodes'] = num_nodes
+result['edges'] = num_edges
+result['size'] = num_nodes * num_parts 
+result['subqubo_size'] = qsize
+
+# Run k-clustering with Hybrid/D-Wave using ocean
+ss = QCD.clusterHybrid(Q, num_parts, qsize, run_label, run_profile, result)
+result
+
+part_number = QCD.process_solution(ss, G, num_blocks, num_nodes, num_parts, result)
+
+mmetric = QCD.calcModularityMetric(mtotal, modularity, part_number)
+result['modularity_metric'] = mmetric
+
+# write comms file 
+GFU.write_partFile(
+    part_num=part_number, 
+    Dim=num_nodes, 
+    nparts=num_parts, 
+    args_dict=args_dict
+) 
+
+columns = ["node_id", "comm_id"]
+communities = []
+
+pred_arr=[]
+
+comm_file_path = os.path.join(args_dict['output_dir'], f"comm{num_parts}.txt")
+with open(comm_file_path) as comm_file:
+    i = 0
+    for line in comm_file:
+        i += 1
+        if i == 1:
+            continue
+        fields = line.strip().split("  ")
+        communities.append(fields)
+        pred_arr.append(fields[1])
+
+pred_arr = [int(x) for x in pred_arr]
+pred_arr[:10]
+
+gt_arr[:10]
+
+# modularity = nx.community.modularity(G, pred_arr)
+print(f"Modularity: {result['modularity_metric']}")
+result['ari_score'] = adjusted_rand_score(gt_arr, pred_arr)
+print(f"ARI: {result['ari_score']}")
+result['ami_score'] = adjusted_mutual_info_score(gt_arr,pred_arr)
+print(f"AMI: {result['ami_score']}")
