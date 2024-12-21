@@ -49,3 +49,8 @@ EXAMPLE-dwave-community-detection.ipynb
 * https://arxiv.org/pdf/1901.09756.pdf
 * https://www.dwavesys.com/media/wafcrbie/18_wed_am_graph_lanl.pdf
 * https://github.com/lanl/Quantum_Graph_Algorithms
+
+## The Quantum Graph Community Detection Algorithm has been described in the following publications.
+1. H. Ushijima-Mwesigwa, C. F. A. Negre, S. M. Mniszewski, 2017, Graph Partitioning using Quantum Annealing on the D-Wave System, Proceedings of the 2nd International Workshop on Post Moore’s Era Supercomputing (PMES), 22-29.
+2. C. F. A. Negre, H. Ushijima-Mwesigwa, S. M. Mniszewski 2020, Detecting Multiple Communities using Quantum Annealing on the D-Wave System, PLOS ONE 15(2): e0227538. https://doi.org/10.1371/journal.pone.0227538
+3. S. M. Mniszewski, P. A. Dub, S. Tretiak, P. M. Anisimov, Y. Zhang, C. F. A. Negre, 2021, Reduction of the Molecular Hamiltonian Matrix using  Quantum Community Detection, Sci Rep 11, 4099 (2021). https://doi.org/10.1038/s41598-021-83561-x#
