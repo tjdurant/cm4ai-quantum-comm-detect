@@ -183,9 +183,9 @@ def compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_bl
 def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold):
 
     qsize = num_blocks * num_nodes
+    print(f"Matrix size: {qsize}")
 
     Q = np.empty((qsize, qsize), dtype=np.float64)
-
     # Precompute indices
     block_indices = np.empty(qsize, dtype=np.int32)
     within_block_indices = np.empty(qsize, dtype=np.int32)

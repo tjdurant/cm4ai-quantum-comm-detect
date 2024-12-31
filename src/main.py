@@ -40,7 +40,7 @@ args_dict = {
     "output_dir" : output_dir
 }
 
-number_of_nodes_in_nx_benchmark = 5000
+number_of_nodes_in_nx_benchmark = 500
 beta0 = 5
 gamma0 = -250
 threshold = 0.2
