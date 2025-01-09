@@ -1,30 +1,33 @@
 #!/usr/bin/env python
+import argparse
+import copy
+import datetime as dt
+import logging
+import math
+import os
+import random
+import re
+import sys
+from datetime import datetime
+from functools import partial
 
-import matplotlib.pyplot as plt
-import re, os, sys
-
-from dwave.system import LeapHybridSampler
-from dwave.system.samplers import DWaveSampler, DWaveCliqueSampler
-from dwave.system.composites import EmbeddingComposite, FixedEmbeddingComposite
 import dimod
 import hybrid
+import matplotlib.pyplot as plt
 import minorminer
-from functools import partial
-from dwave.embedding.chain_strength import uniform_torque_compensation
-from datetime import datetime
 import networkx as nx
-from numpy import linalg as la
-from networkx.generators.atlas import *
+import numba
 import numpy as np
-import networkx as nx
-import random, copy
-import math
+from dwave.embedding.chain_strength import uniform_torque_compensation
+from dwave.system import LeapHybridSampler
+from dwave.system.composites import EmbeddingComposite, FixedEmbeddingComposite
+from dwave.system.samplers import DWaveCliqueSampler, DWaveSampler
+from networkx.generators.atlas import *
+from numpy import linalg as la
 from scipy.sparse import csr_matrix
-import argparse
-import logging
-import datetime as dt
 
-from algorithm.kcomm.qpu_sampler_time import QPUTimeSubproblemAutoEmbeddingSampler
+from algorithm.kcomm.qpu_sampler_time import \
+    QPUTimeSubproblemAutoEmbeddingSampler
 
 #
 # The Quantum Graph Community Detection Algorithm has been described
@@ -150,30 +153,60 @@ def threshold_mmatrix(graph, mmatrix, threshold):
 
   return mmatrix
 
+@numba.njit
+def compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes):
+    i_block = block_indices[i]
+    j_block = block_indices[j]
+    i_within = within_block_indices[i]
+    j_within = within_block_indices[j]
 
-def makeQubo(graph, modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold):
+    # bB term (equivalent to get_entry_beta_B)
+    bB = 0.0
+    if i_block == j_block:
+        bB = beta * modularity[i_within, j_within]
 
-  # Create QUBO matrix
-  qsize = num_blocks*num_nodes
-  Q = np.zeros([qsize,qsize])
+    # BG term (equivalent to get_entry_B_Gamma)
+    BG = 0.0
+    if i_within == j_within:
+        BG = gamma[i_within]
 
-  # Note: weights are set to the negative due to maximization
+    # diag term (equivalent to get_entry_add_diag)
+    diag_term = 0.0
+    if i == j:
+        diag_term = -2.0 * GAMMA[i]
 
-  # Set node weights
-  for i in range(qsize):
-    entry = get_i_j_entry(i, i, modularity, beta, gamma, GAMMA, graph, num_nodes, num_parts, num_blocks)
-    Q[i,i] = -entry
+    return bB + BG + diag_term
 
-  # Set off-diagonal weights
-  for i in range(qsize):
-    for j in range(i, qsize):
-      if i != j:
-        entry = get_i_j_entry(i, j, modularity, beta, gamma, GAMMA, graph, num_nodes, num_parts, num_blocks)
-        if abs(entry) > threshold:
-          Q[i,j] = -entry
-          Q[j,i] = -entry
 
-  return Q
+@numba.njit(parallel=True)
+def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold):
+
+    qsize = num_blocks * num_nodes
+    print(qsize)
+    Q = np.empty((qsize, qsize), dtype=np.float64)
+
+    # Precompute indices
+    block_indices = np.empty(qsize, dtype=np.int32)
+    within_block_indices = np.empty(qsize, dtype=np.int32)
+
+    for idx in range(qsize):
+        block_indices[idx] = idx // num_nodes
+        within_block_indices[idx] = idx % num_nodes
+
+    # Fill Q in parallel
+    for i in numba.prange(qsize):
+        for j in range(i, qsize):
+            entry = compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes)
+            if i == j:
+                # Diagonal elements get negated
+                Q[i, i] = -entry
+            else:
+                # Only set if above threshold
+                if np.abs(entry) > threshold:
+                    Q[i, j] = -entry
+                    Q[j, i] = -entry
+
+    return Q
 
 
 def write_qubo_file(graph, modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold):
@@ -472,10 +505,7 @@ def runDwaveHybrid(Q, num_nodes, k, sub_qsize, run_label, run_profile, result):
   rparams['label'] = run_label
 
   # QPU sampler with timing
-  QPUSubSamTime = QPUTimeSubproblemAutoEmbeddingSampler(
-    num_reads=100, 
-    sampling_params=rparams
-    )
+  QPUSubSamTime = QPUTimeSubproblemAutoEmbeddingSampler(num_reads=100, sampling_params=rparams)
 
   # define the workflow
   iteration = hybrid.Race(
