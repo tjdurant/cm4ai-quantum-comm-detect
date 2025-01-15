@@ -49,6 +49,31 @@ from algorithm.kcomm.qpu_sampler_time import \
 #
 
 
+def build_mod_resolution(Adj, thresh, num_edges, resolution=1.0):
+    Dim = Adj.shape[1]
+    print("\n Dim =", Dim)
+
+    print("\n Computing modularity matrix ...")
+
+    # Degree of each node
+    Deg = Adj.sum(axis=1)
+
+    # M = sum of all node degrees = 2 * (total number of edges)
+    M = Deg.sum()
+    
+    # mtotal is the actual number of edges
+    mtotal = M / 2.0
+
+    # Build the modularity matrix
+    # Standard formula: B_{ij} = A_{ij} - gamma * (k_i k_j / 2m)
+    # In the code, M = 2m, so dividing by M is the same as dividing by 2m.
+    Mod = Adj - resolution * np.outer(Deg, Deg) / M
+
+    np.set_printoptions(precision=3)
+
+    return mtotal, Mod
+
+
 def build_mod(Adj, thresh, num_edges):
   #Builds the modularity matrix from the Adjacency matrix.
   #Given an adj matrix, it constructs the modularity matrix and its graph.
@@ -179,10 +204,9 @@ def compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_bl
 
 
 @numba.njit(parallel=True)
-def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold):
+def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold, community_penalty_factor):
 
     qsize = num_blocks * num_nodes
-    print(qsize)
     Q = np.empty((qsize, qsize), dtype=np.float64)
 
     # Precompute indices
@@ -198,8 +222,9 @@ def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, t
         for j in range(i, qsize):
             entry = compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes)
             if i == j:
-                # Diagonal elements get negated
-                Q[i, i] = -entry
+                # Add penalty for large communities
+                penalty = community_penalty_factor * modularity[within_block_indices[i], within_block_indices[i]]
+                Q[i, i] = -(entry + penalty)  # Negate and add penalty
             else:
                 # Only set if above threshold
                 if np.abs(entry) > threshold:

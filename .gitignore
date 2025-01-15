@@ -10,7 +10,7 @@ results/
 config/
 config.json
 main.py
-
+.DS_Store
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
