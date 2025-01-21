@@ -178,8 +178,11 @@ def threshold_mmatrix(graph, mmatrix, threshold):
 
   return mmatrix
 
-@numba.njit
+# @numba.njit
 def compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes):
+    
+    # replaces get_i_j_entry
+
     i_block = block_indices[i]
     j_block = block_indices[j]
     i_within = within_block_indices[i]
@@ -203,26 +206,32 @@ def compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_bl
     return bB + BG + diag_term
 
 
-@numba.njit(parallel=True)
+
+# @numba.njit(parallel=True)
 def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, threshold, community_penalty_factor):
 
     qsize = num_blocks * num_nodes
     Q = np.empty((qsize, qsize), dtype=np.float64)
 
+    # ----  replaces get_block_number and get_indx_within_block 
     # Precompute indices
-    block_indices = np.empty(qsize, dtype=np.int32)
-    within_block_indices = np.empty(qsize, dtype=np.int32)
+    block_indices = np.zeros(qsize, dtype=np.int32)
+    within_block_indices = np.zeros(qsize, dtype=np.int32)
 
+    
     for idx in range(qsize):
         block_indices[idx] = idx // num_nodes
         within_block_indices[idx] = idx % num_nodes
+    # ----
 
     # Fill Q in parallel
-    for i in numba.prange(qsize):
+    # for i in numba.prange(qsize): TODO: put back in later?
+    for i in range(qsize):
         for j in range(i, qsize):
             entry = compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes)
             if i == j:
                 # Add penalty for large communities
+                # TODO: we added community_penalty_factor. Test and remove if doesn't help
                 penalty = community_penalty_factor * modularity[within_block_indices[i], within_block_indices[i]]
                 Q[i, i] = -(entry + penalty)  # Negate and add penalty
             else:
