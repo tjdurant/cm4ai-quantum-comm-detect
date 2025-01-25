@@ -181,29 +181,26 @@ def threshold_mmatrix(graph, mmatrix, threshold):
 # @numba.njit
 def compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes):
     
-    # replaces get_i_j_entry
-
     i_block = block_indices[i]
     j_block = block_indices[j]
     i_within = within_block_indices[i]
     j_within = within_block_indices[j]
 
-    # bB term (equivalent to get_entry_beta_B)
     bB = 0.0
     if i_block == j_block:
         bB = beta * modularity[i_within, j_within]
 
-    # BG term (equivalent to get_entry_B_Gamma)
     BG = 0.0
     if i_within == j_within:
         BG = gamma[i_within]
 
-    # diag term (equivalent to get_entry_add_diag)
     diag_term = 0.0
     if i == j:
         diag_term = -2.0 * GAMMA[i]
 
-    return bB + BG + diag_term
+    entry_result = np.clip(bB + BG + diag_term, -1e6, 1e6)
+
+    return entry_result
 
 
 
@@ -215,8 +212,8 @@ def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, t
 
     # ----  replaces get_block_number and get_indx_within_block 
     # Precompute indices
-    block_indices = np.zeros(qsize, dtype=np.int32)
-    within_block_indices = np.zeros(qsize, dtype=np.int32)
+    block_indices = np.empty(qsize, dtype=np.int32)
+    within_block_indices = np.empty(qsize, dtype=np.int32)
 
     
     for idx in range(qsize):
@@ -225,7 +222,8 @@ def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, t
     # ----
 
     # Fill Q in parallel
-    # for i in numba.prange(qsize): TODO: put back in later?
+    # TODO: put back in later?
+    # for i in numba.prange(qsize): 
     for i in range(qsize):
         for j in range(i, qsize):
             entry = compute_entry(i, j, modularity, beta, gamma, GAMMA, block_indices, within_block_indices, num_nodes)
@@ -239,6 +237,9 @@ def makeQubo(modularity, beta, gamma, GAMMA, num_nodes, num_parts, num_blocks, t
                 if np.abs(entry) > threshold:
                     Q[i, j] = -entry
                     Q[j, i] = -entry
+                else:
+                    Q[i, j] = 0.0
+                    Q[j, i] = 0.0
 
     return Q
 

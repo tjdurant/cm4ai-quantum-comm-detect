@@ -489,9 +489,9 @@ def runDwaveHybrid(Q, num_nodes, k, sub_qsize, run_label, run_profile, result):
   workflow = hybrid.LoopUntilNoImprovement(iteration, convergence=3)
 
   # Run the workflow
-  init_state = hybrid.State.from_problem(bqm)
+  init_state = hybrid.State.from_problem(bqm)                   # Pass in the binary quadratic model
   t0 = dt.datetime.now()
-  solution = workflow.run(init_state).result()
+  solution = workflow.run(init_state).result()                  # Run the job
   wtime = dt.datetime.now() - t0
   #hybrid.profiling.print_counters(workflow)
   #print('\nQ timers = ', QPUSubSamTime.timers)
