@@ -491,27 +491,49 @@ def write_resultFile(result, args_dict):
     resultFile.close()
 
 
+# def showClusters(part_number, graph, args_dict):
+
+#     #drawing
+#     color = {0:'red', 1:'blue', 2:'green', 3:'turquoise', 4:'yellow', 5:'orange', 6:'violet', 7:'pink', 8:'grey', 9:'black', 10:'teal', 11:'purple', 12:'cyan', 13:'magenta', 14:'brown'}
+#     partition = part_number
+#     size = float(len(set(partition.values())))
+#     pos = nx.spring_layout(graph)
+#     count = 0.
+
+#     number_of_communities_detected = len(set(partition.values()))
+#     print (f"Number of communities detected: {number_of_communities_detected}")
+
+#     for com in set(partition.values()):
+#       count = count + 1.
+#       list_nodes = [nodes for nodes in partition.keys()
+#                                   if partition[nodes] == com]
+#       nx.draw_networkx_nodes(graph, pos, list_nodes, node_size = 80,
+#                                   node_color = color[com] ) #str(count / size))
+
+#     nx.draw_networkx_edges(graph, pos, alpha=0.5)
+
+#     cluster_path = os.path.join(args_dict['output_dir'],"clusters.png")
+#     plt.savefig(cluster_path, dpi=600)
+
+import matplotlib.cm as cm
+
 def showClusters(part_number, graph, args_dict):
-
-    #drawing
-    color = {0:'red', 1:'blue', 2:'green', 3:'turquoise', 4:'yellow', 5:'orange', 6:'violet', 7:'pink', 8:'grey', 9:'black', 10:'teal', 11:'purple', 12:'cyan', 13:'magenta', 14:'brown'}
     partition = part_number
-    size = float(len(set(partition.values())))
-    pos = nx.spring_layout(graph)
-    count = 0.
+    num_communities = len(set(partition.values()))
+    print(f"Number of communities detected: {num_communities}")
 
-    number_of_communities_detected = len(set(partition.values()))
-    print (f"Number of communities detected: {number_of_communities_detected}")
+    # Use a colormap (like tab20, which has 20 distinct colors)
+    cmap = cm.get_cmap('tab20', num_communities)  # Or 'tab10', 'hsv', 'nipy_spectral', etc.
     
-    for com in set(partition.values()) :
-      count = count + 1.
-      list_nodes = [nodes for nodes in partition.keys()
-                                  if partition[nodes] == com]
-      nx.draw_networkx_nodes(graph, pos, list_nodes, node_size = 80,
-                                  node_color = color[com] ) #str(count / size))
-
+    pos = nx.spring_layout(graph)
+    
+    for idx, com in enumerate(set(partition.values())):
+        list_nodes = [node for node in partition.keys() if partition[node] == com]
+        color = cmap(idx)
+        nx.draw_networkx_nodes(graph, pos, list_nodes, node_size=20, node_color=[color])
+    
     nx.draw_networkx_edges(graph, pos, alpha=0.5)
 
-    cluster_path = os.path.join(args_dict['output_dir'],"clusters.png")
+    cluster_path = os.path.join(args_dict['output_dir'], "clusters.png")
+    plt.axis("off")
     plt.savefig(cluster_path, dpi=600)
-
