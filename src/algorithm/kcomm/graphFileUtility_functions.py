@@ -182,7 +182,8 @@ def import_konect(fpath):
 def write_partFile(part_num,Dim,nparts,args_dict):
 
 #   pname = "results/comm" + str(nparts) + ".txt"
-  pname = os.path.join(args_dict['output_dir'], "comm" + str(nparts) + ".txt")
+  file_name = f"nparts_{nparts}_resolution_{args_dict['resolution']}.txt"
+  pname = os.path.join(args_dict['output_dir'], file_name)
   PartFile = open(pname, "w")
   string=str(Dim)+"       "+'\n'
   PartFile.write(string)
