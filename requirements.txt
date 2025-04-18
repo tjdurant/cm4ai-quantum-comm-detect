@@ -7,3 +7,5 @@ pandas
 scikit-learn
 ipykernel
 kaggle
+numba
+python-louvain
